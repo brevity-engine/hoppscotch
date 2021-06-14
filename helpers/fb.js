@@ -10,6 +10,13 @@ import {
   setGraphqlHistoryEntries,
   HISTORY_LIMIT,
 } from "~/newstore/history"
+import {
+  restCollectionStore,
+  setRESTCollections,
+  graphqlCollectionStore,
+  setGraphqlCollections,
+} from "~/newstore/collections"
+import { environments$, replaceEnvironments } from "~/newstore/environments"
 
 // Initialize Firebase, copied from cloud console
 const firebaseConfig = {
@@ -39,9 +46,6 @@ export class FirebaseInstance {
     this.idToken = null
     this.currentFeeds = []
     this.currentSettings = []
-    this.currentCollections = []
-    this.currentGraphqlCollections = []
-    this.currentEnvironments = []
 
     this.currentUser$ = new ReplaySubject(1)
     this.idToken$ = new ReplaySubject(1)
@@ -49,6 +53,29 @@ export class FirebaseInstance {
     let loadedSettings = false
     let loadedRESTHistory = false
     let loadedGraphqlHistory = false
+    let loadedRESTCollections = false
+    let loadedGraphqlCollections = false
+    let loadedEnvironments = false
+
+    graphqlCollectionStore.subject$.subscribe(({ state }) => {
+      if (
+        loadedGraphqlCollections &&
+        this.currentUser &&
+        settingsStore.value.syncCollections
+      ) {
+        this.writeCollections(state, "collectionsGraphql")
+      }
+    })
+
+    restCollectionStore.subject$.subscribe(({ state }) => {
+      if (
+        loadedRESTCollections &&
+        this.currentUser &&
+        settingsStore.value.syncCollections
+      ) {
+        this.writeCollections(state, "collections")
+      }
+    })
 
     restHistoryStore.dispatches$.subscribe((dispatch) => {
       if (
@@ -87,15 +114,23 @@ export class FirebaseInstance {
     })
 
     settingsStore.dispatches$.subscribe((dispatch) => {
-      if (
-        this.currentSettings &&
-        loadedSettings &&
-        dispatch.dispatcher !== "applySettingFB"
-      ) {
-        this.writeSettings(
-          dispatch.payload.settingKey,
-          settingsStore.value[dispatch.payload.settingKey]
-        )
+      if (this.currentUser && loadedSettings) {
+        if (dispatch.dispatcher === "bulkApplySettings") {
+          Object.keys(dispatch.payload).forEach((key) => {
+            this.writeSettings(key, dispatch.payload[key])
+          })
+        } else if (dispatch.dispatcher !== "applySettingFB") {
+          this.writeSettings(
+            dispatch.payload.settingKey,
+            settingsStore.value[dispatch.payload.settingKey]
+          )
+        }
+      }
+    })
+
+    environments$.subscribe((envs) => {
+      if (this.currentUser && loadedEnvironments) {
+        this.writeEnvironments(envs)
       }
     })
 
@@ -220,9 +255,16 @@ export class FirebaseInstance {
               collection.id = doc.id
               collections.push(collection)
             })
+
+            // Prevent infinite ping-pong of updates
+            loadedRESTCollections = false
+
+            // TODO: Wth is with collections[0]
             if (collections.length > 0) {
-              this.currentCollections = collections[0].collection
+              setRESTCollections(collections[0].collection)
             }
+
+            loadedRESTCollections = true
           })
 
         this.usersCollection
@@ -235,9 +277,16 @@ export class FirebaseInstance {
               collection.id = doc.id
               collections.push(collection)
             })
+
+            // Prevent infinite ping-pong of updates
+            loadedGraphqlCollections = false
+
+            // TODO: Wth is with collections[0]
             if (collections.length > 0) {
-              this.currentGraphqlCollections = collections[0].collection
+              setGraphqlCollections(collections[0].collection)
             }
+
+            loadedGraphqlCollections = true
           })
 
         this.usersCollection
@@ -250,9 +299,9 @@ export class FirebaseInstance {
               environment.id = doc.id
               environments.push(environment)
             })
-            if (environments.length > 0) {
-              this.currentEnvironments = environments[0].environment
-            }
+            loadedEnvironments = false
+            replaceEnvironments(environments[0].environment)
+            loadedEnvironments = true
           })
       } else {
         this.currentUser = null
@@ -276,6 +325,20 @@ export class FirebaseInstance {
 
   async getSignInMethodsForEmail(email) {
     return await this.app.auth().fetchSignInMethodsForEmail(email)
+  }
+
+  async signInWithEmail(email, actionCodeSettings) {
+    return await this.app
+      .auth()
+      .sendSignInLinkToEmail(email, actionCodeSettings)
+  }
+
+  async isSignInWithEmailLink(url) {
+    return await this.app.auth().isSignInWithEmailLink(url)
+  }
+
+  async signInWithEmailLink(email, url) {
+    return await this.app.auth().signInWithEmailLink(email, url)
   }
 
   async signOutUser() {
@@ -458,7 +521,6 @@ export class FirebaseInstance {
         .set(cl)
     } catch (e) {
       console.error("error updating", cl, e)
-
       throw e
     }
   }

@@ -8,6 +8,13 @@ import {
   setRESTHistoryEntries,
   setGraphqlHistoryEntries,
 } from "./history"
+import {
+  restCollectionStore,
+  graphqlCollectionStore,
+  setGraphqlCollections,
+  setRESTCollections,
+} from "./collections"
+import { replaceEnvironments, environments$ } from "./environments"
 
 function checkAndMigrateOldSettings() {
   const vuexData = JSON.parse(window.localStorage.getItem("vuex") || "{}")
@@ -20,6 +27,30 @@ function checkAndMigrateOldSettings() {
     window.localStorage.setItem("settings", JSON.stringify(settingsData))
 
     delete vuexData.postwoman.settings
+    window.localStorage.setItem("vuex", JSON.stringify(vuexData))
+  }
+
+  if (vuexData.postwoman && vuexData.postwoman.collections) {
+    const restColls = vuexData.postwoman.collections
+    window.localStorage.setItem("collections", JSON.stringify(restColls))
+
+    delete vuexData.postwoman.collections
+    window.localStorage.setItem("vuex", JSON.stringify(vuexData))
+  }
+
+  if (vuexData.postwoman && vuexData.postwoman.collectionsGraphql) {
+    const gqlColls = vuexData.postwoman.collectionsGraphql
+    window.localStorage.setItem("collectionsGraphql", JSON.stringify(gqlColls))
+
+    delete vuexData.postwoman.collectionsGraphql
+    window.localStorage.setItem("vuex", JSON.stringify(vuexData))
+  }
+
+  if (vuexData.postwoman && vuexData.postwoman.environments) {
+    const envs = vuexData.postwoman.environments
+    window.localStorage.setItem("environments", JSON.stringify(envs))
+
+    delete vuexData.postwoman.environments
     window.localStorage.setItem("vuex", JSON.stringify(vuexData))
   }
 }
@@ -59,9 +90,44 @@ function setupHistoryPersistence() {
   })
 }
 
+function setupCollectionsPersistence() {
+  const restCollectionData = JSON.parse(
+    window.localStorage.getItem("collections") || "[]"
+  )
+
+  const graphqlCollectionData = JSON.parse(
+    window.localStorage.getItem("collectionsGraphql") || "[]"
+  )
+
+  setRESTCollections(restCollectionData)
+  setGraphqlCollections(graphqlCollectionData)
+
+  restCollectionStore.subject$.subscribe(({ state }) => {
+    window.localStorage.setItem("collections", JSON.stringify(state))
+  })
+
+  graphqlCollectionStore.subject$.subscribe(({ state }) => {
+    window.localStorage.setItem("collectionsGraphql", JSON.stringify(state))
+  })
+}
+
+function setupEnvironmentsPersistence() {
+  const environmentsData = JSON.parse(
+    window.localStorage.getItem("environments") || "[]"
+  )
+
+  replaceEnvironments(environmentsData)
+
+  environments$.subscribe((envs) => {
+    window.localStorage.setItem("environments", JSON.stringify(envs))
+  })
+}
+
 export function setupLocalPersistence() {
   checkAndMigrateOldSettings()
 
   setupSettingsPersistence()
   setupHistoryPersistence()
+  setupCollectionsPersistence()
+  setupEnvironmentsPersistence()
 }

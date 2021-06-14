@@ -54,28 +54,12 @@
     </div>
     <div slot="body" class="flex flex-col">
       <div class="flex flex-col items-start p-2">
-        <span
-          v-tooltip="{
-            content: !fb.currentUser
-              ? $t('login_first')
-              : $t('replace_current'),
-          }"
-        >
-          <button
-            :disabled="!fb.currentUser"
-            class="icon"
-            @click="syncCollections"
-          >
-            <i class="material-icons">folder_shared</i>
-            <span>{{ $t("import_from_sync") }}</span>
-          </button>
-        </span>
         <button
           v-tooltip="$t('replace_current')"
           class="icon"
           @click="openDialogChooseFileToReplaceWith"
         >
-          <i class="material-icons">create_new_folder</i>
+          <i class="material-icons">folder_special</i>
           <span>{{ $t("replace_json") }}</span>
           <input
             ref="inputChooseFileToReplaceWith"
@@ -90,7 +74,7 @@
           class="icon"
           @click="openDialogChooseFileToImportFrom"
         >
-          <i class="material-icons">folder_special</i>
+          <i class="material-icons">create_new_folder</i>
           <span>{{ $t("import_json") }}</span>
           <input
             ref="inputChooseFileToImportFrom"
@@ -100,30 +84,16 @@
             @change="importFromJSON"
           />
         </button>
-      </div>
-      <div v-if="showJsonCode" class="row-wrapper">
-        <textarea v-model="collectionJson" rows="8" readonly></textarea>
-      </div>
-    </div>
-    <div slot="footer">
-      <div class="row-wrapper">
-        <span>
-          <SmartToggle :on="showJsonCode" @change="showJsonCode = $event">
-            {{ $t("show_code") }}
-          </SmartToggle>
-        </span>
-        <span>
-          <button class="icon" @click="hideModal">
-            {{ $t("cancel") }}
-          </button>
-          <button
-            v-tooltip="$t('download_file')"
-            class="icon primary"
-            @click="exportJSON"
-          >
-            {{ $t("export") }}
-          </button>
-        </span>
+        <button
+          v-tooltip="$t('download_file')"
+          class="icon"
+          @click="exportJSON"
+        >
+          <i class="material-icons">drive_file_move</i>
+          <span>
+            {{ $t("export_as_json") }}
+          </span>
+        </button>
       </div>
     </div>
   </SmartModal>
@@ -131,6 +101,11 @@
 
 <script>
 import { fb } from "~/helpers/fb"
+import {
+  graphqlCollections$,
+  setGraphqlCollections,
+  appendGraphqlCollections,
+} from "~/newstore/collections"
 
 export default {
   props: {
@@ -139,16 +114,16 @@ export default {
   data() {
     return {
       fb,
-      showJsonCode: false,
+    }
+  },
+  subscriptions() {
+    return {
+      collections: graphqlCollections$,
     }
   },
   computed: {
     collectionJson() {
-      return JSON.stringify(
-        this.$store.state.postwoman.collectionsGraphql,
-        null,
-        2
-      )
+      return JSON.stringify(this.collections, null, 2)
     },
   },
   methods: {
@@ -194,12 +169,8 @@ export default {
         })
         .then(({ files }) => {
           const collections = JSON.parse(Object.values(files)[0].content)
-          this.$store.commit("postwoman/replaceCollections", {
-            data: collections,
-            flag: "graphql",
-          })
+          setGraphqlCollections(collections)
           this.fileImported()
-          this.syncToFBCollections()
         })
         .catch((error) => {
           this.failedImport()
@@ -238,12 +209,8 @@ export default {
           this.failedImport()
           return
         }
-        this.$store.commit("postwoman/replaceCollections", {
-          data: collections,
-          flag: "graphql",
-        })
+        setGraphqlCollections(collections)
         this.fileImported()
-        this.syncToFBCollections()
       }
       reader.readAsText(this.$refs.inputChooseFileToReplaceWith.files[0])
       this.$refs.inputChooseFileToReplaceWith.value = ""
@@ -275,12 +242,8 @@ export default {
           this.failedImport()
           return
         }
-        this.$store.commit("postwoman/importCollections", {
-          data: collections,
-          flag: "graphql",
-        })
+        appendGraphqlCollections(collections)
         this.fileImported()
-        this.syncToFBCollections()
       }
       reader.readAsText(this.$refs.inputChooseFileToImportFrom.files[0])
       this.$refs.inputChooseFileToImportFrom.value = ""
@@ -302,25 +265,6 @@ export default {
       this.$toast.success(this.$t("download_started"), {
         icon: "done",
       })
-    },
-    syncCollections() {
-      this.$store.commit("postwoman/replaceCollections", {
-        data: fb.currentGraphqlCollections,
-        flag: "graphql",
-      })
-      this.fileImported()
-    },
-    syncToFBCollections() {
-      if (fb.currentUser !== null && fb.currentSettings[0]) {
-        if (fb.currentSettings[0].value) {
-          fb.writeCollections(
-            JSON.parse(
-              JSON.stringify(this.$store.state.postwoman.collectionsGraphql)
-            ),
-            "collectionsGraphql"
-          )
-        }
-      }
     },
     fileImported() {
       this.$toast.info(this.$t("file_imported"), {

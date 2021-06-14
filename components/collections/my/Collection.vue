@@ -3,7 +3,7 @@
     <div
       :class="[
         'row-wrapper transition duration-150 ease-in-out',
-        { 'bg-bgDarkColor': dragging },
+        { 'bg-primaryDark': dragging },
       ]"
       @dragover.prevent
       @drop.prevent="dropEvent"
@@ -44,7 +44,7 @@
         >
           <i class="material-icons">check_box</i>
         </button>
-        <v-popover v-if="!saveRequest">
+        <v-popover>
           <button v-tooltip.left="$t('more')" class="tooltip-target icon">
             <i class="material-icons">more_vert</i>
           </button>
@@ -93,7 +93,7 @@
         <li
           v-for="(folder, index) in collection.folders"
           :key="index"
-          class="ml-8 border-l border-brdColor"
+          class="ml-8 border-l border-divider"
         >
           <CollectionsMyFolder
             :folder="folder"
@@ -109,7 +109,7 @@
             @edit-folder="$emit('edit-folder', $event)"
             @edit-request="$emit('edit-request', $event)"
             @select="$emit('select', $event)"
-            @remove-request="removeRequest"
+            @remove-request="$emit('remove-request', $event)"
           />
         </li>
       </ul>
@@ -117,7 +117,7 @@
         <li
           v-for="(request, index) in collection.requests"
           :key="index"
-          class="ml-8 border-l border-brdColor"
+          class="ml-8 border-l border-divider"
         >
           <CollectionsMyRequest
             :request="request"
@@ -132,7 +132,7 @@
             :picked="picked"
             @edit-request="editRequest($event)"
             @select="$emit('select', $event)"
-            @remove-request="removeRequest"
+            @remove-request="$emit('remove-request', $event)"
           />
         </li>
       </ul>
@@ -144,7 +144,7 @@
             (collection.requests == undefined ||
               collection.requests.length === 0)
           "
-          class="flex ml-8 border-l border-brdColor"
+          class="flex ml-8 border-l border-divider"
         >
           <p class="info">
             <i class="material-icons">not_interested</i>
@@ -163,8 +163,7 @@
 </template>
 
 <script>
-import { fb } from "~/helpers/fb"
-import { getSettingSubject } from "~/newstore/settings"
+import { moveRESTRequest } from "~/newstore/collections"
 
 export default {
   props: {
@@ -188,11 +187,6 @@ export default {
       pageNo: 0,
     }
   },
-  subscriptions() {
-    return {
-      SYNC_COLLECTIONS: getSettingSubject("syncCollections"),
-    }
-  },
   computed: {
     isSelected() {
       return (
@@ -205,14 +199,6 @@ export default {
   methods: {
     editRequest(event) {
       this.$emit("edit-request", event)
-    },
-    syncCollections() {
-      if (fb.currentUser !== null && this.SYNC_COLLECTIONS) {
-        fb.writeCollections(
-          JSON.parse(JSON.stringify(this.$store.state.postwoman.collections)),
-          "collections"
-        )
-      }
     },
     toggleShowChildren() {
       if (this.$props.saveRequest)
@@ -236,29 +222,9 @@ export default {
     },
     dropEvent({ dataTransfer }) {
       this.dragging = !this.dragging
-      const oldCollectionIndex = dataTransfer.getData("oldCollectionIndex")
-      const oldFolderIndex = dataTransfer.getData("oldFolderIndex")
-      const oldFolderName = dataTransfer.getData("oldFolderName")
+      const folderPath = dataTransfer.getData("folderPath")
       const requestIndex = dataTransfer.getData("requestIndex")
-      const flag = "rest"
-      this.$store.commit("postwoman/moveRequest", {
-        oldCollectionIndex,
-        newCollectionIndex: this.$props.collectionIndex,
-        newFolderIndex: -1,
-        newFolderName: this.$props.collection.name,
-        oldFolderIndex,
-        oldFolderName,
-        requestIndex,
-        flag,
-      })
-      this.syncCollections()
-    },
-    removeRequest({ collectionIndex, folderName, requestIndex }) {
-      this.$emit("remove-request", {
-        collectionIndex,
-        folderName,
-        requestIndex,
-      })
+      moveRESTRequest(folderPath, requestIndex, this.collectionIndex.toString())
     },
   },
 }

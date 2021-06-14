@@ -1,6 +1,6 @@
 <template>
   <div>
-    <AppSection ref="request" :label="$t('request')" no-legend>
+    <AppSection ref="request" :label="$t('request')">
       <ul>
         <li>
           <label for="socketio-url">{{ $t("url") }}</label>
@@ -43,12 +43,7 @@
       </ul>
     </AppSection>
 
-    <AppSection
-      id="response"
-      ref="response"
-      :label="$t('communication')"
-      no-legend
-    >
+    <AppSection id="response" ref="response" :label="$t('communication')">
       <ul>
         <li>
           <RealtimeLog :title="$t('log')" :log="communication.log" />
@@ -81,8 +76,8 @@
           border-b border-dashed
           divide-y
           md:divide-x
-          border-brdColor
-          divide-dashed divide-brdColor
+          border-divider
+          divide-dashed divide-divider
           md:divide-y-0
         "
       >
@@ -197,7 +192,7 @@ export default {
         {
           payload: this.$t("connecting_to", { name: this.url }),
           source: "info",
-          color: "var(--ac-color)",
+          color: "var(--accent-color)",
         },
       ]
 
@@ -216,7 +211,7 @@ export default {
             {
               payload: this.$t("connected_to", { name: this.url }),
               source: "info",
-              color: "var(--ac-color)",
+              color: "var(--accent-color)",
               ts: new Date().toLocaleTimeString(),
             },
           ]

@@ -107,6 +107,9 @@ export default {
     text() {
       this.$emit("input", this.text)
     },
+    value(newValue) {
+      this.text = newValue
+    },
   },
 
   mounted() {
@@ -191,7 +194,7 @@ export default {
 
   ul.suggestions {
     @apply hidden;
-    @apply bg-actColor;
+    @apply bg-primary;
     @apply absolute;
     @apply mx-2;
     @apply left-0;
@@ -219,8 +222,8 @@ export default {
 
       &:hover,
       &.active {
-        @apply bg-acColor;
-        @apply text-actColor;
+        @apply bg-accent;
+        @apply text-primary;
         @apply cursor-pointer;
       }
     }

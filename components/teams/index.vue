@@ -1,18 +1,12 @@
 <template>
-  <AppSection
-    ref="teams"
-    class="green"
-    icon="history"
-    :label="$t('teams')"
-    no-legend
-  >
+  <AppSection ref="teams" :label="$t('teams')">
     <div class="flex flex-col">
       <label>{{ $t("teams") }}</label>
       <div v-if="fb.currentUser"></div>
       <div v-else>
         <label>{{ $t("login_with") }}</label>
         <p>
-          <FirebaseLogin />
+          <FirebaseLogin @show-email="showEmail = true" />
         </p>
       </div>
     </div>
@@ -50,6 +44,7 @@
         </li>
       </ul>
     </div>
+    <FirebaseEmail :show="showEmail" @hide-modal="showEmail = false" />
   </AppSection>
 </template>
 
@@ -67,6 +62,7 @@ export default {
       me: {},
       myTeams: [],
       fb,
+      showEmail: false,
     }
   },
   apollo: {

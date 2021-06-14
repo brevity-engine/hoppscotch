@@ -1,5 +1,5 @@
 <template>
-  <AppSection ref="parameters" label="Parameters" no-legend>
+  <AppSection ref="parameters" label="Parameters">
     <ul v-if="params.length !== 0">
       <li>
         <div class="row-wrapper">
@@ -23,8 +23,8 @@
         border-b border-dashed
         divide-y
         md:divide-x
-        border-brdColor
-        divide-dashed divide-brdColor
+        border-divider
+        divide-dashed divide-divider
         md:divide-y-0
       "
       :class="{ 'border-t': index == 0 }"

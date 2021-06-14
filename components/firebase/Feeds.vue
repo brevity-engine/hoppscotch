@@ -1,12 +1,12 @@
 <template>
   <div
     v-if="fb.currentFeeds.length !== 0"
-    class="divide-y virtual-list divide-dashed divide-brdColor"
+    class="divide-y virtual-list divide-dashed divide-divider"
   >
     <ul v-for="feed in fb.currentFeeds" :key="feed.id" class="flex-col">
       <div data-test="list-item" class="show-on-large-screen">
         <li class="info">
-          <label data-test="list-label">
+          <label data-test="list-label" class="break-all">
             {{ feed.label || $t("no_label") }}
           </label>
         </li>
@@ -16,7 +16,7 @@
       </div>
       <div class="show-on-large-screen">
         <li data-test="list-message" class="info clamb-3">
-          <label>{{ feed.message || $t("empty") }}</label>
+          <label class="break-all">{{ feed.message || $t("empty") }}</label>
         </li>
       </div>
     </ul>

@@ -33,7 +33,7 @@
         >
           <i class="material-icons">check_box</i>
         </button>
-        <v-popover v-if="!saveRequest">
+        <v-popover>
           <button
             v-if="collectionsType.selectedTeam.myRole !== 'VIEWER'"
             v-tooltip.left="$t('more')"
@@ -89,7 +89,7 @@
         <li
           v-for="(folder, index) in collection.children"
           :key="folder.title"
-          class="ml-8 border-l border-brdColor"
+          class="ml-8 border-l border-divider"
         >
           <CollectionsTeamsFolder
             :folder="folder"
@@ -114,7 +114,7 @@
         <li
           v-for="(request, index) in collection.requests"
           :key="index"
-          class="ml-8 border-l border-brdColor"
+          class="ml-8 border-l border-divider"
         >
           <CollectionsTeamsRequest
             :request="request.request"
@@ -140,7 +140,7 @@
             (collection.requests == undefined ||
               collection.requests.length === 0)
           "
-          class="flex ml-8 border-l border-brdColor"
+          class="flex ml-8 border-l border-divider"
         >
           <p class="info">
             <i class="material-icons">not_interested</i>

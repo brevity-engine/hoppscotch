@@ -8,8 +8,8 @@
           </div>
           <div class="modal-body">
             <slot name="body"></slot>
-            <!-- <div class="fade top"></div>
-            <div class="fade bottom"></div> -->
+            <!-- <div class="top fade"></div>
+            <div class="bottom fade"></div> -->
           </div>
           <div v-if="hasFooterSlot" class="modal-footer">
             <slot name="footer"></slot>
@@ -44,7 +44,7 @@ export default {
   @apply ease-in-out;
   @apply duration-150;
 
-  background-color: rgba(0, 0, 0, 0.32);
+  background-color: rgba(0, 0, 0, 0.64);
 }
 
 .modal-wrapper {
@@ -63,9 +63,11 @@ export default {
   @apply transition;
   @apply ease-in-out;
   @apply duration-150;
-  @apply bg-bgColor;
+  @apply bg-primary;
   @apply rounded-lg;
   @apply shadow-2xl;
+  @apply border-4;
+  @apply border-tooltip;
 
   max-height: calc(100vh - 128px);
   max-width: 640px;
@@ -106,25 +108,25 @@ export default {
   @apply duration-150;
 }
 
-.fade {
-  @apply absolute;
-  @apply block;
-  @apply transition;
-  @apply ease-in-out;
-  @apply duration-150;
+// .fade {
+//   @apply absolute;
+//   @apply block;
+//   @apply transition;
+//   @apply ease-in-out;
+//   @apply duration-150;
 
-  left: 16px;
-  right: 20px;
-  height: 32px;
+//   left: 16px;
+//   right: 20px;
+//   height: 32px;
 
-  &.top {
-    top: 68px;
-    background: linear-gradient(to bottom, var(--bg-color), transparent);
-  }
+//   &.top {
+//     top: 56px;
+//     background: linear-gradient(to bottom, var(--primary-color), transparent);
+//   }
 
-  &.bottom {
-    bottom: 16px;
-    background: linear-gradient(to top, var(--bg-color), transparent);
-  }
-}
+//   &.bottom {
+//     bottom: 16px;
+//     background: linear-gradient(to top, var(--primary-color), transparent);
+//   }
+// }
 </style>

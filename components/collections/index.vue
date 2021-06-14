@@ -1,5 +1,5 @@
 <template>
-  <AppSection ref="collections" :label="$t('collections')" no-legend>
+  <AppSection ref="collections" :label="$t('collections')">
     <div class="show-on-large-screen">
       <input
         v-if="!saveRequest"
@@ -52,13 +52,12 @@
       @hide-modal="displayModalImportExport(false)"
       @update-team-collections="updateTeamCollections"
     />
-    <div class="border-b row-wrapper border-brdColor">
+    <div class="border-b row-wrapper border-divider">
       <button
         v-if="
           collectionsType.type == 'team-collections' &&
           (collectionsType.selectedTeam == undefined ||
-            collectionsType.selectedTeam.myRole == 'VIEWER') &&
-          !saveRequest
+            collectionsType.selectedTeam.myRole == 'VIEWER')
         "
         class="icon"
         disabled
@@ -69,11 +68,7 @@
           <span>{{ $t("new") }}</span>
         </div>
       </button>
-      <button
-        v-else-if="!saveRequest"
-        class="icon"
-        @click="displayModalAdd(true)"
-      >
+      <button v-else class="icon" @click="displayModalAdd(true)">
         <i class="material-icons">add</i>
         <span>{{ $t("new") }}</span>
       </button>
@@ -141,9 +136,18 @@
 import gql from "graphql-tag"
 import cloneDeep from "lodash/cloneDeep"
 import { fb } from "~/helpers/fb"
-import { getSettingSubject } from "~/newstore/settings"
 import TeamCollectionAdapter from "~/helpers/teams/TeamCollectionAdapter"
 import * as teamUtils from "~/helpers/teams/utils"
+import {
+  restCollections$,
+  addRESTCollection,
+  editRESTCollection,
+  addRESTFolder,
+  removeRESTCollection,
+  editRESTFolder,
+  removeRESTRequest,
+  editRESTRequest,
+} from "~/newstore/collections"
 
 export default {
   props: {
@@ -179,7 +183,7 @@ export default {
   },
   subscriptions() {
     return {
-      SYNC_COLLECTIONS: getSettingSubject("syncCollections"),
+      collections: restCollections$,
     }
   },
   computed: {
@@ -189,21 +193,11 @@ export default {
       }
       return true
     },
-    collections() {
-      return fb.currentUser !== null
-        ? fb.currentCollections
-        : this.$store.state.postwoman.collections
-    },
     filteredCollections() {
-      let collections = null
-      if (this.collectionsType.type === "my-collections") {
-        collections =
-          fb.currentUser !== null
-            ? fb.currentCollections
-            : this.$store.state.postwoman.collections
-      } else {
-        collections = this.teamCollectionsNew
-      }
+      const collections =
+        this.collectionsType.type === "my-collections"
+          ? this.collections
+          : this.teamCollectionsNew
 
       if (!this.filterText) {
         return collections
@@ -301,12 +295,11 @@ export default {
         return
       }
       if (this.collectionsType.type === "my-collections") {
-        this.$store.commit("postwoman/addNewCollection", {
+        addRESTCollection({
           name,
-          flag: "rest",
+          folders: [],
+          requests: [],
         })
-
-        this.syncCollections()
       } else if (
         this.collectionsType.type === "team-collections" &&
         this.collectionsType.selectedTeam.myRole !== "VIEWER"
@@ -342,12 +335,8 @@ export default {
           ...this.editingCollection,
           name: newName,
         }
-        this.$store.commit("postwoman/editCollection", {
-          collection: collectionUpdated,
-          collectionIndex: this.editingCollectionIndex,
-          flag: "rest",
-        })
-        this.syncCollections()
+
+        editRESTCollection(this.editingCollectionIndex, collectionUpdated)
       } else if (
         this.collectionsType.type === "team-collections" &&
         this.collectionsType.selectedTeam.myRole !== "VIEWER"
@@ -372,14 +361,7 @@ export default {
     // Intended to be called by CollectionEditFolder modal submit event
     updateEditingFolder(name) {
       if (this.collectionsType.type === "my-collections") {
-        this.$store.commit("postwoman/editFolder", {
-          collectionIndex: this.editingCollectionIndex,
-          folder: { ...this.editingFolder, name },
-          folderIndex: this.editingFolderIndex,
-          folderName: this.editingFolder.name,
-          flag: "rest",
-        })
-        this.syncCollections()
+        editRESTFolder(this.editingFolderPath, { ...this.editingFolder, name })
       } else if (
         this.collectionsType.type === "team-collections" &&
         this.collectionsType.selectedTeam.myRole !== "VIEWER"
@@ -411,15 +393,11 @@ export default {
       }
 
       if (this.collectionsType.type === "my-collections") {
-        this.$store.commit("postwoman/editRequest", {
-          requestCollectionIndex: this.editingCollectionIndex,
-          requestFolderName: this.editingFolderName,
-          requestFolderIndex: this.editingFolderIndex,
-          requestNew: requestUpdated,
-          requestIndex: this.editingRequestIndex,
-          flag: "rest",
-        })
-        this.syncCollections()
+        editRESTRequest(
+          this.editingFolderPath,
+          this.editingRequestIndex,
+          requestUpdated
+        )
       } else if (
         this.collectionsType.type === "team-collections" &&
         this.collectionsType.selectedTeam.myRole !== "VIEWER"
@@ -478,17 +456,10 @@ export default {
       this.$data.editingCollection = collection
       this.$data.editingCollectionIndex = collectionIndex
       this.displayModalEdit(true)
-      this.syncCollections()
     },
     onAddFolder({ name, folder, path }) {
-      const flag = "rest"
       if (this.collectionsType.type === "my-collections") {
-        this.$store.commit("postwoman/addFolder", {
-          name,
-          path,
-          flag,
-        })
-        this.syncCollections()
+        addRESTFolder(name, path)
       } else if (this.collectionsType.type === "team-collections") {
         if (this.collectionsType.selectedTeam.myRole !== "VIEWER") {
           this.$apollo
@@ -538,13 +509,13 @@ export default {
       this.displayModalAddFolder(true)
     },
     editFolder(payload) {
-      const { collectionIndex, folder, folderIndex } = payload
+      const { collectionIndex, folder, folderIndex, folderPath } = payload
       this.$data.editingCollectionIndex = collectionIndex
       this.$data.editingFolder = folder
       this.$data.editingFolderIndex = folderIndex
+      this.$data.editingFolderPath = folderPath
       this.$data.collectionsType = this.collectionsType
       this.displayModalEditFolder(true)
-      this.syncCollections()
     },
     editRequest(payload) {
       const {
@@ -553,15 +524,16 @@ export default {
         folderName,
         request,
         requestIndex,
+        folderPath,
       } = payload
       this.$data.editingCollectionIndex = collectionIndex
       this.$data.editingFolderIndex = folderIndex
       this.$data.editingFolderName = folderName
       this.$data.editingRequest = request
       this.$data.editingRequestIndex = requestIndex
+      this.editingFolderPath = folderPath
       this.$emit("select-request", requestIndex)
       this.displayModalEditRequest(true)
-      this.syncCollections()
     },
     resetSelectedData() {
       this.$data.editingCollection = undefined
@@ -571,27 +543,16 @@ export default {
       this.$data.editingRequest = undefined
       this.$data.editingRequestIndex = undefined
     },
-    syncCollections() {
-      if (fb.currentUser !== null && this.SYNC_COLLECTIONS) {
-        fb.writeCollections(
-          JSON.parse(JSON.stringify(this.$store.state.postwoman.collections)),
-          "collections"
-        )
-      }
-    },
     expandCollection(collectionID) {
       this.teamCollectionAdapter.expandCollection(collectionID)
     },
     removeCollection({ collectionsType, collectionIndex, collectionID }) {
       if (collectionsType.type === "my-collections") {
-        this.$store.commit("postwoman/removeCollection", {
-          collectionIndex,
-          flag: "rest",
-        })
+        removeRESTCollection(collectionIndex)
+
         this.$toast.error(this.$t("deleted"), {
           icon: "delete",
         })
-        this.syncCollections()
       } else if (collectionsType.type === "team-collections") {
         if (collectionsType.selectedTeam.myRole !== "VIEWER") {
           this.$apollo
@@ -623,18 +584,13 @@ export default {
         }
       }
     },
-    removeRequest({ collectionIndex, folderName, requestIndex }) {
+    removeRequest({ requestIndex, folderPath }) {
       if (this.collectionsType.type === "my-collections") {
-        this.$store.commit("postwoman/removeRequest", {
-          collectionIndex,
-          folderName,
-          requestIndex,
-          flag: "rest",
-        })
+        removeRESTRequest(folderPath, requestIndex)
+
         this.$toast.error(this.$t("deleted"), {
           icon: "delete",
         })
-        this.syncCollections()
       } else if (this.collectionsType.type === "team-collections") {
         teamUtils
           .deleteRequest(this.$apollo, requestIndex)

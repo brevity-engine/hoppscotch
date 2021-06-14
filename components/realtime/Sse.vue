@@ -1,6 +1,6 @@
 <template>
-  <div class="page">
-    <AppSection ref="request" :label="$t('request')" no-legend>
+  <div>
+    <AppSection ref="request" :label="$t('request')">
       <ul>
         <li>
           <label for="server">{{ $t("server") }}</label>
@@ -36,12 +36,7 @@
       </ul>
     </AppSection>
 
-    <AppSection
-      id="response"
-      ref="response"
-      :label="$t('communication')"
-      no-legend
-    >
+    <AppSection id="response" ref="response" :label="$t('communication')">
       <ul>
         <li>
           <RealtimeLog :title="$t('events')" :log="events.log" />
@@ -105,7 +100,7 @@ export default {
         {
           payload: this.$t("connecting_to", { name: this.server }),
           source: "info",
-          color: "var(--ac-color)",
+          color: "var(--accent-color)",
         },
       ]
       if (typeof EventSource !== "undefined") {
@@ -117,7 +112,7 @@ export default {
               {
                 payload: this.$t("connected_to", { name: this.server }),
                 source: "info",
-                color: "var(--ac-color)",
+                color: "var(--accent-color)",
                 ts: new Date().toLocaleTimeString(),
               },
             ]
