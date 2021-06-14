@@ -9,9 +9,7 @@ export default {
     gql[attribute] = value
   },
 
-  setCollapsedSection({ theme }, value) {
-    
-  },
+  setCollapsedSection({ theme }, value) {},
 
   addGQLHeader({ gql }, object) {
     gql.headers.push(object)
