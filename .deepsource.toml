@@ -1,23 +1,15 @@
 version = 1
 
 [[analyzers]]
+name = "go"
+enabled = true
+
+  [analyzers.meta]
+  import_root = "github.com/brevity-engine/hoppscotch"
+
+[[analyzers]]
 name = "javascript"
 enabled = true
 
   [analyzers.meta]
   plugins = ["vue"]
-
-[[analyzers]]
-name = "go"
-enabled = true
-
-  [analyzers.meta]
-  import_root = ["github.com/brevity-engine/hoppscotch"]
-
-[[transformers]]
-name = "prettier"
-enabled = true
-
-[[transformers]]
-name = "gofmt"
-enabled = true
